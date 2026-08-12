@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { audio } from './audio/audio';
 import { AmbientParticles } from './components/fx';
+import { OfflineGate } from './components/OfflineGate';
 import { ChestOverlay, LoginRewardModal, TutorialOverlay } from './components/overlays';
 import { Icon } from './components/ui';
 import { THEMES } from './game/config';
 import type { ScreenName } from './game/types';
+import { useOnline } from './hooks/useOnline';
 import { AwardsScreen } from './screens/Awards';
 import { DailyScreen } from './screens/Daily';
 import { GameScreen } from './screens/GameScreen';
@@ -23,6 +25,8 @@ const NAV: { name: ScreenName; icon: string; label: string }[] = [
 ];
 
 export default function App() {
+  const online = useOnline();
+  const blocked = !online;
   const screen = useStore((s) => s.screen);
   const themeId = useStore((s) => s.themeId);
   const settings = useStore((s) => s.settings);
@@ -43,15 +47,15 @@ export default function App() {
     return () => clearInterval(iv);
   }, []);
 
-  /* Keep the audio engine in sync with player settings. */
+  /* Keep the audio engine in sync with player settings. Mute while offline. */
   useEffect(() => {
     audio.configure({
-      music: settings.music,
-      sfx: settings.sfx,
+      music: settings.music && !blocked,
+      sfx: settings.sfx && !blocked,
       musicVol: settings.musicVol,
       sfxVol: settings.sfxVol,
     });
-  }, [settings.music, settings.sfx, settings.musicVol, settings.sfxVol]);
+  }, [settings.music, settings.sfx, settings.musicVol, settings.sfxVol, blocked]);
 
   const vars: Record<string, string> = {};
   (Object.entries(theme.vars) as [string, string][]).forEach(([k, v]) => {
@@ -71,7 +75,9 @@ export default function App() {
         ...vars,
         background: `linear-gradient(165deg, ${theme.vars.bg1} 0%, ${theme.vars.bg2} 100%)`,
       }}
-      onPointerDown={() => audio.unlock()}
+      onPointerDown={() => {
+        if (!blocked) audio.unlock();
+      }}
     >
       <div
         className="app-glow"
@@ -81,22 +87,30 @@ export default function App() {
       />
       <AmbientParticles
         colors={[theme.vars.accent, theme.vars.gold, theme.vars.accent2]}
-        reduce={settings.reduceMotion}
+        reduce={settings.reduceMotion || blocked}
       />
 
-      <div className="relative z-10 mx-auto flex h-full w-full max-w-[520px] flex-col">
+      <div
+        className="app-safe relative z-10 mx-auto flex h-full w-full max-w-[520px] flex-col"
+        aria-hidden={blocked || undefined}
+        style={blocked ? { pointerEvents: 'none' } : undefined}
+      >
         <div className="min-h-0 flex-1">
           {screen.name === 'home' && <HomeScreen />}
           {screen.name === 'map' && <LevelMapScreen />}
           {screen.name === 'daily' && <DailyScreen />}
           {screen.name === 'awards' && <AwardsScreen />}
           {screen.name === 'profile' && <ProfileScreen />}
-          {screen.name === 'game' && <GameScreen key={JSON.stringify(screen.game)} />}
+          {screen.name === 'game' && (
+            <GameScreen
+              key={`${screen.game?.mode ?? 'main'}-${screen.game?.level ?? 0}-${screen.game?.dailyIndex ?? 0}`}
+            />
+          )}
         </div>
 
         {!inGame && (
           <nav
-            className="relative z-20 mx-3 mb-3 rounded-2xl px-2 py-1.5"
+            className="relative z-20 mx-3 mb-3 shrink-0 rounded-2xl px-2 py-1.5"
             style={{
               background: theme.vars.navbg,
               border: `1px solid ${theme.vars.edge}`,
@@ -141,25 +155,25 @@ export default function App() {
         )}
       </div>
 
-      {/* toasts */}
-      <div className="pointer-events-none fixed left-1/2 top-4 z-[95] flex w-full max-w-sm -translate-x-1/2 flex-col items-center gap-2 px-4">
-        {toasts.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className="q-toast anim-toast pointer-events-auto"
-            onClick={() => dismissToast(t.id)}
-          >
-            {t.icon && <Icon name={t.icon} size={17} />}
-            <span>{t.text}</span>
-          </button>
-        ))}
-      </div>
+      {!blocked && (
+        <div className="app-toasts pointer-events-none fixed left-1/2 z-[95] flex w-full max-w-sm -translate-x-1/2 flex-col items-center gap-2 px-4">
+          {toasts.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className="q-toast anim-toast pointer-events-auto"
+              onClick={() => dismissToast(t.id)}
+            >
+              {t.icon && <Icon name={t.icon} size={17} />}
+              <span>{t.text}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* global overlays */}
-      {pendingReward && !inGame && <LoginRewardModal streak={streak} />}
-      {!tutorialDone && <TutorialOverlay />}
-      {chestReward && (
+      {!blocked && pendingReward && !inGame && <LoginRewardModal streak={streak} />}
+      {!blocked && !tutorialDone && <TutorialOverlay />}
+      {!blocked && chestReward && (
         <ChestOverlay
           reward={chestReward}
           onClose={() => {
@@ -168,6 +182,8 @@ export default function App() {
           }}
         />
       )}
+
+      {blocked && <OfflineGate />}
     </div>
   );
 }

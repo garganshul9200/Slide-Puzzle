@@ -65,7 +65,7 @@ interface StoreState extends SaveState {
   saveSnapshot: (g: InProgressGame | null) => void;
   consumeHint: () => boolean;
   buyHintWithCoins: () => boolean;
-  watchAdReward: (kind: 'hint' | 'coins' | 'double' | 'skip') => number;
+  watchAdReward: (kind: 'hint' | 'coins' | 'double' | 'skip' | 'restart') => number;
   shouldInterstitial: () => boolean;
   noteInterstitialShown: () => void;
   claimMission: (m: Mission) => boolean;
@@ -433,13 +433,15 @@ export const useStore = create<StoreState>()(
         const s = get();
         if (today < s.lastLoginDay) return; // clock rolled back — hold state
 
-        const patch: Partial<StoreState> = { lastSeenTs: Date.now() };
+        const patch: Partial<StoreState> = {};
+        let statsDirty = false;
         const stats = { ...s.stats };
         let streak = s.streak;
 
         if (today !== s.lastLoginDay) {
           streak = s.lastLoginDay === prevDayKey(today) ? s.streak + 1 : 1;
           stats.longestStreak = Math.max(stats.longestStreak, streak);
+          statsDirty = true;
           patch.lastLoginDay = today;
           patch.streak = streak;
         }
@@ -457,6 +459,7 @@ export const useStore = create<StoreState>()(
           stats.winsToday = 0;
           stats.noHintWinsToday = 0;
           stats.dailiesToday = 0;
+          statsDirty = true;
         }
         if (s.missionsWeek !== wk) {
           patch.missionsWeek = wk;
@@ -464,13 +467,18 @@ export const useStore = create<StoreState>()(
             (id) => !id.startsWith('w-'),
           );
           stats.winsWeek = 0;
+          statsDirty = true;
         }
-        patch.stats = stats;
+        if (statsDirty) patch.stats = stats;
 
         if (s.rewardClaimedDay !== today && !s.pendingReward) {
           const idx = ((streak - 1) % 7 + 7) % 7;
           patch.pendingReward = { day: idx + 1, ...DAILY_REWARDS[idx] };
         }
+
+        // Skip noop ticks — avoids persisting lastSeenTs every 20s.
+        if (Object.keys(patch).length === 0) return;
+        patch.lastSeenTs = Date.now();
         set(patch);
       },
     }),

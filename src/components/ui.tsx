@@ -171,7 +171,7 @@ export function Modal({
   wide?: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div className="app-safe fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/75 anim-fade"
         onClick={dismissable ? onClose : undefined}

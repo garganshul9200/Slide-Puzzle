@@ -1,6 +1,7 @@
 /** Full-screen game overlays: pause, level complete, chest, ads, tutorial, daily reward. */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { isNativeAds, showInterstitialAd, showRewardedAd } from '../ads/admob';
 import { audio } from '../audio/audio';
 import { DAILY_REWARDS, SHOP, xpProgress } from '../game/config';
 import type { ChestReward, RewardSummary } from '../game/types';
@@ -233,8 +234,7 @@ const FAKE_ADS = [
 
 /**
  * Ad placement shim. On web this renders a simulated interstitial/rewarded
- * unit with a real countdown; in the native build the same component wraps
- * react-native-google-mobile-ads and fires the identical callbacks.
+ * unit with a countdown. On native it loads real AdMob units.
  */
 export function AdOverlay({
   kind,
@@ -243,18 +243,60 @@ export function AdOverlay({
   kind: 'rewarded' | 'interstitial';
   onDone: (completed: boolean) => void;
 }) {
+  const native = isNativeAds();
   const [left, setLeft] = useState(5);
+  const [nativeStatus, setNativeStatus] = useState<'loading' | 'failed'>('loading');
   const ad = useMemo(() => FAKE_ADS[Math.floor(Math.random() * FAKE_ADS.length)], []);
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;
 
+  /* Native — real AdMob rewarded / interstitial. */
   useEffect(() => {
+    if (!native) return;
+    let cancelled = false;
+    void (async () => {
+      const ok =
+        kind === 'rewarded' ? await showRewardedAd() : await showInterstitialAd();
+      if (cancelled) return;
+      if (ok) doneRef.current(true);
+      else {
+        setNativeStatus('failed');
+        doneRef.current(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [native, kind]);
+
+  /* Web simulation countdown. */
+  useEffect(() => {
+    if (native) return;
     const iv = window.setInterval(() => setLeft((l) => Math.max(0, l - 1)), 1000);
     return () => clearInterval(iv);
-  }, []);
+  }, [native]);
+
+  if (native) {
+    const label =
+      nativeStatus === 'loading'
+        ? kind === 'rewarded'
+          ? 'Loading rewarded ad…'
+          : 'Loading ad…'
+        : 'Ad unavailable';
+    return (
+      <div className="app-safe fixed inset-0 z-[90] flex flex-col items-center justify-center" style={{ background: '#05060a' }}>
+        <span className="inline-block h-3 w-3 animate-pulse rounded-full" style={{ background: '#ffb638' }} />
+        <p className="mt-4 text-sm font-black uppercase tracking-widest" style={{ color: '#8b93a7' }}>
+          {label}
+        </p>
+      </div>
+    );
+  }
 
   const ready = left === 0;
 
   return (
-    <div className="fixed inset-0 z-[90] flex flex-col" style={{ background: '#05060a' }}>
+    <div className="app-safe fixed inset-0 z-[90] flex flex-col" style={{ background: '#05060a' }}>
       <div className="flex items-center justify-between px-4 py-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#8b93a7' }}>
         <span>Sponsored</span>
         {ready ? (

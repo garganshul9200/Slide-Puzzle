@@ -4,10 +4,10 @@ import { useStore } from '../state/store';
 import { ChunkyButton, Icon, Panel, ProgressBar } from '../components/ui';
 
 function MissionRow({ m }: { m: Mission }) {
-  const stats = useStore((s) => s.stats);
+  const progressRaw = useStore((s) => s.stats[m.stat]);
   const claimed = useStore((s) => s.claimedMissions.includes(m.id));
   const claimMission = useStore((s) => s.claimMission);
-  const progress = Math.min(stats[m.stat], m.target);
+  const progress = Math.min(progressRaw, m.target);
   const ready = progress >= m.target && !claimed;
 
   return (

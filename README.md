@@ -1,84 +1,103 @@
-# Tile Quest
+# Slide Puzzle
 
-A production-structured sliding picture-puzzle game. Split the picture into tiles, slide them
-into the empty slot, and rebuild the image — across a 100-level quest, daily challenges,
-missions, achievements, XP, coins, themes and a full meta-economy.
+A sliding picture-puzzle game for web and Android. Split the picture into tiles, slide them into the empty slot, and rebuild the image across a 100-level quest, daily challenges, missions, achievements, XP, coins, themes, and ads.
 
-This repository ships the game as a **React + Vite + TypeScript** build (this workspace
-produces web builds). The architecture mirrors the React Native target 1:1 so the codebase
-ports cleanly; the mapping table below shows where each native technology lands.
+> **This is a vibe-coded application** — built iteratively with AI pair-programming in Cursor (prompts, review, and polish in chat). Expect a shipping-oriented game structure with live AdMob, Capacitor, and a full meta loop, not a from-scratch handcrafted architecture document.
 
-| Native stack (store build)        | This implementation                                   |
-| --------------------------------- | ----------------------------------------------------- |
-| React Native + TypeScript         | React 19 + TypeScript (strict)                        |
-| React Navigation                  | Typed screen state machine (`src/state/store.ts`)     |
-| Zustand                           | Zustand (+ `persist` middleware)                      |
-| Reanimated / Gesture Handler      | GPU-composited CSS transform transitions, pointer API |
-| MMKV                              | Versioned localStorage save (`tile-quest-save`)       |
-| Fast Image / asset `levels/*.jpg` | Procedural seeded artwork (`src/game/art.ts`)         |
-| Firebase Auth / Firestore         | Anonymous device id + same `SaveState` shape, sync-ready |
-| google-mobile-ads                 | `AdOverlay` shim with identical rewarded/interstitial callbacks |
-| Remote Config                     | `src/game/config.ts` single balance source (RC defaults) |
-| Crashlytics / Analytics / FCM     | Hook points in store actions (toast/event seams)      |
+## Stack
+
+| Layer | Choice |
+| --- | --- |
+| UI | React 19 + TypeScript + Tailwind CSS 4 |
+| Build | Vite 7 (single-file web bundle) |
+| Native shell | Capacitor 8 (Android) |
+| State | Zustand + `persist` (localStorage) |
+| Ads | `@capacitor-community/admob` (banner, rewarded, interstitial) |
+| Network | `@capacitor/network` (app requires connectivity) |
+
+**App ID:** `com.tilequest.game` · **Display name:** Slide Puzzle
+
+## Features
+
+- **Always-solvable boards** — shuffle with inversion-parity checks
+- **Difficulty curve** — 3×3 → 6×6 across levels 1–100
+- **Daily challenges** — 3 UTC-seeded puzzles; each clear skips a locked level
+- **Hints / undo / peek / mix** — mix & extras gated by rewarded ads (Premium skips)
+- **Progression** — stars, XP, coins, chests, missions, achievements, themes
+- **Ads** — bottom banner on play, rewarded for mix/hints/double coins, interstitial every 4 wins and every 10 minutes of playtime
+- **Offline gate** — full-screen block until the device is online again
+- **Safe areas** — notch / gesture-bar padding on native
+
+## Project layout
+
+```
+src/
+  ads/           # AdMob config + banner / rewarded / interstitial helpers
+  audio/         # WebAudio SFX + ambient music
+  components/    # Board, UI, overlays, banner slot, offline gate
+  game/          # Pure puzzle engine, art, balance, types (unit-tested)
+  hooks/         # Shared online status
+  screens/       # Home, Map, Game, Daily, Awards, Profile
+  state/         # Zustand store + persistence
+android/         # Capacitor Android project
+```
 
 ## Setup
 
 ```bash
 npm install
-npm run dev        # local dev server
-npm run build      # production build (dist/)
-npx vitest run     # unit tests (puzzle engine)
 ```
 
-## Architecture (feature-based)
+### Web
 
-```
-src/
-  game/        # pure, unit-tested core
-    puzzle.ts  # board model, solvable shuffle, slides, hint heuristic
-    art.ts     # seeded procedural level artwork (100 levels + dailies)
-    config.ts  # balance: grids, par, XP/coins, themes, achievements, missions
-    types.ts   # shared domain types
-    utils.ts   # PRNG, UTC day/week keys (anti clock-cheat), formatting
-  state/
-    store.ts   # Zustand store: progression, economy, dailies, persistence
-  audio/
-    audio.ts   # WebAudio synth: SFX + ambient music, volume/mute controls
-  components/
-    Board.tsx  # tile rendering + slide/cascade/peek/win animations
-    fx.tsx     # ambient particles, confetti
-    ui.tsx     # icon set (inline SVG), buttons, panels, modals
-    overlays.tsx # pause, level complete, chest, ads, tutorial, login reward
-  screens/     # Home, LevelMap, Game, Daily, Awards, Profile
+```bash
+npm run dev          # local Vite server
+npm run build        # production build → dist/
+npx vitest run       # puzzle engine unit tests
 ```
 
-## Gameplay rules implemented
+### Android (no Android Studio required)
 
-- **Always solvable** — Fisher–Yates shuffle + inversion-parity validation
-  (`isSolvable`), parity fix-up by swapping two tiles, re-roll until ≥ 60 % scrambled.
-- **Difficulty curve** — levels 1–20 → 3×3, 21–40 → 4×4, 41–70 → 5×5, 71–100 → 6×6.
-- **Progression** — only the highest unlocked level is playable; completed levels stay
-  replayable; progress persists across restarts; mid-game snapshots resume on return.
-- **Daily challenges** — 3 puzzles seeded from the UTC date (clock changes don't reroll);
-  each completion skips one locked level; resets at UTC midnight; no repeats per day.
-- **Hints** — 3 free per UTC day (auto-plays the best Manhattan-reducing move), then a
-  rewarded ad or coins; unlimited with Premium. **Undo** — unlimited move history.
-- **Scoring** — 1–3 stars vs. par moves, coins (first-clear bonus), XP with speed and
-  no-hint bonuses, best moves/time per level, "double coins" rewarded ad.
-- **Meta** — mystery chest every 5 levels, daily/weekly missions, 7-day login streak
-  rewards, 13 achievements, 7 themes, premium IAP flow, interstitial cadence (every 4 wins),
-  simulated rewarded/interstitial ads with the real callback contract.
-- **Anti-cheat** — all day logic runs on UTC day keys that only move forward; the timer
-  pauses when the tab is hidden; snapshots are server-shaped for Firebase validation.
+Needs JDK **21**, Android SDK, and an emulator or device.
 
-## Accessibility & settings
+```bash
+# optional: pin Java for Gradle
+export JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
 
-Reduced motion, large text, vibration toggle, music/SFX volumes and mutes,
-high-saturation colorblind-considerate palettes, keyboard play (arrow keys),
-aria labels on icon buttons.
+npm run android:run   # build web → cap sync → deploy to a target
+npm run android:apk   # assemble debug APK only
+```
 
-## Future-ready seams
+Useful one-offs:
 
-`GameParams.mode` extends to PvP/custom/AI puzzles; `SaveState` syncs to Firestore per
-anonymous uid; `config.ts` hydrates from Remote Config; `AdOverlay` swaps its creative for
-`react-native-google-mobile-ads`; events/season packs are additive theme + art seeds.
+```bash
+npm run android:sync  # build + npx cap sync android
+emulator -avd <name>  # start an AVD from the CLI
+```
+
+## Ads config
+
+Live unit IDs live in `src/ads/config.ts`. The Android App ID in `android/app/src/main/AndroidManifest.xml` must match `ADMOB_APP_ID`.
+
+- Set `USE_TEST_ADS = true` for emulator / debug to avoid burning production inventory.
+- Premium players skip banner, timed interstitials, and rewarded gates for mix.
+
+## Gameplay notes
+
+- Progress persists under the key `tile-quest-save` (legacy id; display name is Slide Puzzle).
+- Day/streak/daily logic uses **UTC** day keys (clock rollback does not advance rewards).
+- Level art is procedural and seeded (`src/game/art.ts`) — no shipped image pack.
+
+## Scripts
+
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Vite dev server |
+| `npm run build` | Production web build |
+| `npm run android:sync` | Build + Capacitor sync |
+| `npm run android:run` | Sync and run on device/emulator |
+| `npm run android:apk` | Debug APK via Gradle |
+
+## License / vibe
+
+Vibe-coded for fun and iteration. Ship, tweak balance in `src/game/config.ts`, and keep the AdMob IDs out of test builds until you’re ready for store traffic.

@@ -42,7 +42,7 @@ export function LevelMapScreen() {
   return (
     <div className="h-full overflow-y-auto px-4 pb-28 pt-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-3xl" style={{ color: 'var(--t-text)' }}>Quest Map</h1>
+        <h1 className="font-display text-3xl" style={{ color: 'var(--t-text)' }}>Puzzle Map</h1>
         <StatPill icon="star" value={`${totalStars}/${TOTAL_LEVELS * 3}`} color="var(--t-gold)" />
       </div>
       <div className="mt-2">

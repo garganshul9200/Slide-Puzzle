@@ -68,6 +68,8 @@ export function Board({
         background: 'var(--t-boardbg)',
         boxShadow:
           'inset 0 2px 12px rgba(0,0,0,.5), 0 0 0 4px var(--t-frame), 0 20px 44px rgba(0,0,0,.42)',
+        // One shared image reference for all tiles (avoids N× CSS url() copies).
+        ['--board-img' as string]: `url(${img})`,
       }}
     >
       {/* empty slot marker */}
@@ -113,7 +115,7 @@ export function Board({
                 shakeValue === v && 'anim-shake',
               )}
               style={{
-                backgroundImage: `url(${img})`,
+                backgroundImage: 'var(--board-img)',
                 backgroundSize: `${n * 100}% ${n * 100}%`,
                 backgroundPosition: `${(gc / (n - 1)) * 100}% ${(gr / (n - 1)) * 100}%`,
                 boxShadow: highlighted

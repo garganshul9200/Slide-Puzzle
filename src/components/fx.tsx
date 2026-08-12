@@ -20,7 +20,8 @@ export function AmbientParticles({
     let w = (canvas.width = window.innerWidth);
     let h = (canvas.height = window.innerHeight);
     const palette = [c0, c1, c2];
-    const ps = Array.from({ length: 34 }, () => ({
+    const count = reduce ? 0 : 22;
+    const ps = Array.from({ length: count }, () => ({
       x: Math.random() * w,
       y: Math.random() * h,
       r: 1.2 + Math.random() * 3.4,
@@ -35,7 +36,13 @@ export function AmbientParticles({
     };
     window.addEventListener('resize', onResize);
     let raf = 0;
+    let running = true;
     const draw = (t: number) => {
+      if (!running) return;
+      if (document.hidden) {
+        raf = requestAnimationFrame(draw);
+        return;
+      }
       ctx.clearRect(0, 0, w, h);
       for (const p of ps) {
         p.x += p.vx + Math.sin(t / 2400 + p.tw) * 0.1;
@@ -58,6 +65,7 @@ export function AmbientParticles({
     if (reduce) draw(0);
     else raf = requestAnimationFrame(draw);
     return () => {
+      running = false;
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', onResize);
     };

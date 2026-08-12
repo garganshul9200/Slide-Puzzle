@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { audio } from '../audio/audio';
+import { initializeAdMob, prepareInterstitialAd, prepareRewardedAd, tickPlaytime } from '../ads/admob';
+import { BannerAd } from '../components/BannerAd';
 import { Board } from '../components/Board';
 import { Confetti } from '../components/fx';
 import {
@@ -23,6 +25,7 @@ import {
 import type { Board as BoardModel } from '../game/puzzle';
 import type { RewardSummary } from '../game/types';
 import { buzz, fmtClock } from '../game/utils';
+import { useOnline } from '../hooks/useOnline';
 import { useStore } from '../state/store';
 
 type Phase = 'shuffle' | 'play' | 'won';
@@ -82,6 +85,7 @@ export function GameScreen() {
   const saveSnapshot = useStore((s) => s.saveSnapshot);
   const tutorialDone = useStore((s) => s.tutorialDone);
   const snapshot = useStore((s) => s.inProgress);
+  const online = useOnline();
 
   const restored =
     !!snapshot &&
@@ -115,8 +119,9 @@ export function GameScreen() {
   const boardRef = useRef(board);
   const phaseRef = useRef(phase);
   const pausedRef = useRef(paused);
-  const rewardKindRef = useRef<'hint' | 'double'>('hint');
+  const rewardKindRef = useRef<'hint' | 'double' | 'restart'>('hint');
   const pendingNextRef = useRef(false);
+  const timedInterstitialRef = useRef(false);
   boardRef.current = board;
   phaseRef.current = phase;
   pausedRef.current = paused;
@@ -143,15 +148,31 @@ export function GameScreen() {
 
   /* ----------------------------------- timer ----------------------------------- */
   useEffect(() => {
-    if (phase !== 'play' || paused) return;
+    if (phase !== 'play' || paused || adKind) return;
+    let uiAcc = 0;
     const iv = window.setInterval(() => {
-      setElapsed((e) => {
-        elapsedRef.current = e + 100;
-        return e + 100;
-      });
+      elapsedRef.current += 100;
+      uiAcc += 100;
+      // Keep ref precise; only re-render the screen ~4×/sec for the clock pill.
+      if (uiAcc >= 250) {
+        uiAcc = 0;
+        setElapsed(elapsedRef.current);
+      }
     }, 100);
     return () => clearInterval(iv);
-  }, [phase, paused]);
+  }, [phase, paused, adKind]);
+
+  /* Timed interstitial — every 10 minutes of active puzzle playtime. */
+  useEffect(() => {
+    if (premium || phase !== 'play' || paused || adKind || hintShop || showHelp) return;
+    const iv = window.setInterval(() => {
+      if (tickPlaytime(1000)) {
+        timedInterstitialRef.current = true;
+        setAdKind('interstitial');
+      }
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [premium, phase, paused, adKind, hintShop, showHelp]);
 
   /* pause when the tab is hidden — the timer can never be cheated */
   useEffect(() => {
@@ -162,24 +183,40 @@ export function GameScreen() {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
 
+  /* Freeze the run while offline so the timer doesn't advance under the gate. */
+  useEffect(() => {
+    if (!online && phaseRef.current === 'play') setPaused(true);
+  }, [online]);
+
   useEffect(() => {
     if (tutorialDone) setShowHelp(false);
   }, [tutorialDone]);
+
+  /* Warm AdMob only for free players. */
+  useEffect(() => {
+    if (premium) return;
+    void initializeAdMob().then(() =>
+      Promise.all([prepareRewardedAd(), prepareInterstitialAd()]),
+    );
+  }, [premium]);
 
   /* ------------------------- mid-game persistence (main) ------------------------ */
   useEffect(() => {
     // Never persist before real play starts — a solved-board snapshot would
     // let a resumed game win instantly.
     if (mode !== 'main' || phase !== 'play' || movesRef.current === 0) return;
-    saveSnapshot({
-      level,
-      mode,
-      board,
-      n,
-      moves,
-      elapsedMs: elapsedRef.current,
-      hintsUsed: hintsUsed.current,
-    });
+    const t = window.setTimeout(() => {
+      saveSnapshot({
+        level,
+        mode,
+        board,
+        n,
+        moves,
+        elapsedMs: elapsedRef.current,
+        hintsUsed: hintsUsed.current,
+      });
+    }, 400);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [board, moves]);
 
@@ -308,6 +345,18 @@ export function GameScreen() {
       setPhase('play');
     }, 1480);
     audio.slide(2);
+    // Prefetch next rewarded unit after a successful mix.
+    void prepareRewardedAd();
+  };
+
+  /** Mix / replay — Premium skips the ad; everyone else watches a rewarded unit. */
+  const requestRestart = () => {
+    if (premium) {
+      restart();
+      return;
+    }
+    rewardKindRef.current = 'restart';
+    setAdKind('rewarded');
   };
 
   const quit = () => {
@@ -356,6 +405,12 @@ export function GameScreen() {
   const onAdDone = (completed: boolean) => {
     const store = useStore.getState();
     if (completed && adKind === 'rewarded') {
+      if (rewardKindRef.current === 'restart') {
+        store.watchAdReward('restart');
+        setAdKind(null);
+        restart();
+        return;
+      }
       if (rewardKindRef.current === 'double') {
         const amt = store.watchAdReward('double');
         audio.coin();
@@ -365,17 +420,27 @@ export function GameScreen() {
         store.watchAdReward('hint');
         store.toast('+1 hint — tap the bulb!', 'bulb');
       }
+      void prepareRewardedAd();
+    } else if (!completed && rewardKindRef.current === 'restart') {
+      store.toast('Watch the full ad to mix the board', 'play');
     }
-    if (adKind === 'interstitial' && pendingNextRef.current) {
-      pendingNextRef.current = false;
-      store.noteInterstitialShown();
-      setAdKind(null);
-      if (mode === 'main' && level < TOTAL_LEVELS) {
-        preloadArt(level + 1);
-        store.startGame({ mode: 'main', level: level + 1 });
-      } else {
-        nav({ name: 'daily' });
+    if (adKind === 'interstitial') {
+      if (completed) store.noteInterstitialShown();
+      void prepareInterstitialAd();
+      if (pendingNextRef.current) {
+        pendingNextRef.current = false;
+        timedInterstitialRef.current = false;
+        setAdKind(null);
+        if (mode === 'main' && level < TOTAL_LEVELS) {
+          preloadArt(level + 1);
+          store.startGame({ mode: 'main', level: level + 1 });
+        } else {
+          nav({ name: 'daily' });
+        }
+        return;
       }
+      timedInterstitialRef.current = false;
+      setAdKind(null);
       return;
     }
     setAdKind(null);
@@ -414,7 +479,7 @@ export function GameScreen() {
       : 'Next Puzzle';
 
   return (
-    <div className="flex h-full flex-col px-3 pb-3 pt-3">
+    <div className="flex h-full flex-col px-3 pt-3">
       <Confetti burst={burst} />
 
       <header className="flex items-center gap-2">
@@ -449,7 +514,7 @@ export function GameScreen() {
         />
       </div>
 
-      <div className="flex items-center justify-center gap-2.5">
+      <div className="flex items-center justify-center gap-2.5 pb-2">
         <ControlBtn icon="undo" label="Undo" onClick={onUndo} />
         <ControlBtn
           icon="eye"
@@ -463,8 +528,11 @@ export function GameScreen() {
           onClick={onHint}
           badge={premium ? '∞' : String(hintsLeft)}
         />
-        <ControlBtn icon="restart" label="Mix" onClick={restart} />
+        <ControlBtn icon="restart" label="Mix" onClick={requestRestart} />
       </div>
+
+      {/* Bottom banner — hidden for premium and while a full-screen ad is up. */}
+      <BannerAd enabled={!premium && !adKind} className="-mx-3" />
 
       {paused && phase === 'play' && (
         <PauseMenu
@@ -473,7 +541,7 @@ export function GameScreen() {
           onResume={() => setPaused(false)}
           onRestart={() => {
             setPaused(false);
-            restart();
+            requestRestart();
           }}
           onHelp={() => {
             setPaused(false);
@@ -496,7 +564,7 @@ export function GameScreen() {
             setAdKind('rewarded');
           }}
           onNext={goNext}
-          onReplay={restart}
+          onReplay={requestRestart}
           onExit={() => nav({ name: mode === 'main' ? 'map' : 'daily' })}
           nextLabel={nextLabel}
         />

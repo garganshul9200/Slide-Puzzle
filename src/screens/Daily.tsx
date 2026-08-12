@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import { getDailyArt } from '../game/art';
 import { DAILY_GRID } from '../game/config';
 import { fmtCountdown, msUntilMidnight } from '../game/utils';
@@ -5,9 +6,16 @@ import { useStore } from '../state/store';
 import { ChunkyButton, Icon, Panel, useTicker } from '../components/ui';
 
 export function DailyScreen() {
-  const s = useStore();
+  const { dailyDone, dailyDay, unlockedLevel, startGame } = useStore(
+    useShallow((s) => ({
+      dailyDone: s.dailyDone,
+      dailyDay: s.dailyDay,
+      unlockedLevel: s.unlockedLevel,
+      startGame: s.startGame,
+    })),
+  );
   useTicker(1000);
-  const done = s.dailyDone.filter(Boolean).length;
+  const done = dailyDone.filter(Boolean).length;
 
   return (
     <div className="h-full overflow-y-auto px-4 pb-28 pt-4">
@@ -24,14 +32,14 @@ export function DailyScreen() {
         Resets at midnight UTC — no do-overs!
       </p>
 
-      {s.dailyDone.map((isDone, i) => {
+      {dailyDone.map((isDone, i) => {
         const n = DAILY_GRID[i];
         return (
-          <Panel key={`${s.dailyDay}-${i}`} className="anim-rise mt-3.5 p-3.5">
+          <Panel key={`${dailyDay}-${i}`} className="anim-rise mt-3.5 p-3.5">
             <div className="flex items-center gap-3.5">
               <div className="relative shrink-0">
                 <img
-                  src={getDailyArt(s.dailyDay, i)}
+                  src={getDailyArt(dailyDay, i)}
                   alt={`Daily puzzle ${i + 1}`}
                   className="h-[72px] w-[72px] rounded-xl"
                   draggable={false}
@@ -65,7 +73,7 @@ export function DailyScreen() {
                 color={isDone ? 'slate' : 'teal'}
                 icon={isDone ? 'check' : 'play'}
                 disabled={isDone}
-                onClick={() => s.startGame({ mode: 'daily', level: 1, dailyIndex: i })}
+                onClick={() => startGame({ mode: 'daily', level: 1, dailyIndex: i })}
               >
                 {isDone ? 'Done' : 'Play'}
               </ChunkyButton>
@@ -88,7 +96,7 @@ export function DailyScreen() {
           <h3 className="font-display text-lg" style={{ color: 'var(--t-accent)' }}>How it works</h3>
           <ul className="mt-1.5 space-y-1.5 text-sm font-semibold" style={{ color: 'var(--t-sub)' }}>
             <li className="flex gap-2"><Icon name="sun" size={16} className="mt-0.5 shrink-0" /> Puzzles are generated from the server date — changing your clock won't spawn new ones.</li>
-            <li className="flex gap-2"><Icon name="skip" size={16} className="mt-0.5 shrink-0" /> Finish puzzle 1 → level {s.unlockedLevel + 1} unlocks. Finish all three → skip 3 levels.</li>
+            <li className="flex gap-2"><Icon name="skip" size={16} className="mt-0.5 shrink-0" /> Finish puzzle 1 → level {unlockedLevel + 1} unlocks. Finish all three → skip 3 levels.</li>
             <li className="flex gap-2"><Icon name="lock" size={16} className="mt-0.5 shrink-0" /> Each daily puzzle can only be played once per day.</li>
           </ul>
         </Panel>

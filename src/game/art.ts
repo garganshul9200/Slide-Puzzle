@@ -30,6 +30,7 @@ const PALETTES: string[][] = [
 ];
 
 const cache = new Map<string, string>();
+const CACHE_MAX = 48;
 const SIZE = 640;
 
 function rgba(hex: string, a: number): string {
@@ -287,7 +288,12 @@ function styleFor(seed: number): number {
 function make(seed: number): string {
   const key = `art-${seed}`;
   const hit = cache.get(key);
-  if (hit) return hit;
+  if (hit) {
+    // Refresh LRU order.
+    cache.delete(key);
+    cache.set(key, hit);
+    return hit;
+  }
   const canvas = document.createElement('canvas');
   canvas.width = SIZE;
   canvas.height = SIZE;
@@ -298,6 +304,10 @@ function make(seed: number): string {
   STYLES[styleFor(seed)](ctx, SIZE, rng, pal);
   const url = canvas.toDataURL('image/jpeg', 0.92);
   cache.set(key, url);
+  if (cache.size > CACHE_MAX) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
+  }
   return url;
 }
 

@@ -10,7 +10,7 @@ import type { SaveState } from './types';
 export const TOTAL_LEVELS = 100;
 export const DAILY_SLOTS = 3;
 export const HINTS_PER_DAY = 3;
-export const AD_EVERY = 4; // interstitial cadence: every N completed levels
+export const AD_EVERY = 4; // interstitial after N wins (also every 3 min playtime)
 
 /** Difficulty bands: 1-20 → 3x3, 21-40 → 4x4, 41-70 → 5x5, 71-100 → 6x6. */
 export function gridForLevel(level: number): number {

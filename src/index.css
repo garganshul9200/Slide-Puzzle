@@ -4,6 +4,14 @@
   --slide-ms: 160ms;
   --font-d: "Lilita One", "Nunito", sans-serif;
   --font-u: "Nunito", sans-serif;
+
+  /* Capacitor 8 injects --safe-area-inset-* on Android; env() covers iOS / web. */
+  --sat: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --sar: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --sab: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --sal: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --safe-pad-top: max(0px, calc(var(--sat) - 14px));
+  --safe-pad-bottom: max(0px, calc(var(--sab) - 4px));
 }
 
 html,
@@ -30,6 +38,15 @@ button {
   position: relative;
   font-family: var(--font-u);
   color: var(--t-text);
+}
+
+/* Keep chrome clear of notch / gesture bars (tuned via --safe-pad-*). */
+.app-safe {
+  padding: var(--safe-pad-top) var(--sar) var(--safe-pad-bottom) var(--sal);
+}
+
+.app-toasts {
+  top: calc(1rem + var(--safe-pad-top));
 }
 
 .app-glow {

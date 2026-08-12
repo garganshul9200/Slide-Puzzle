@@ -74,10 +74,6 @@ export function fmtNum(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(n);
 }
 
-export function clamp(v: number, lo: number, hi: number): number {
-  return Math.min(hi, Math.max(lo, v));
-}
-
 /** Haptics (no-op where unsupported; gated by the player's setting). */
 export function buzz(pattern: number | number[], enabled: boolean): void {
   if (!enabled) return;

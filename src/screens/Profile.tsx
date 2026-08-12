@@ -44,6 +44,7 @@ export function ProfileScreen() {
   const [info, setInfo] = useState<'privacy' | 'terms' | null>(null);
   const [adOpen, setAdOpen] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [usernameDraft, setUsernameDraft] = useState(s.username);
 
   const st = s.stats;
   const avgTime = st.wins ? fmtTime(st.totalTimeMs / st.wins) : '—';
@@ -70,9 +71,14 @@ export function ProfileScreen() {
           <div className="min-w-0 flex-1">
             <input
               className="q-input font-display"
-              value={s.username}
+              value={usernameDraft}
               maxLength={16}
-              onChange={(e) => s.setProfile({ username: e.target.value })}
+              onChange={(e) => setUsernameDraft(e.target.value)}
+              onBlur={() => {
+                const next = usernameDraft.trim() || 'Explorer';
+                setUsernameDraft(next);
+                if (next !== s.username) s.setProfile({ username: next });
+              }}
               aria-label="Username"
             />
             <div className="mt-1 flex items-center gap-2">
@@ -179,7 +185,7 @@ export function ProfileScreen() {
         <Panel className="p-4" >
           <div className="flex items-center gap-2">
             <Icon name="crown" size={22} className="shrink-0" />
-            <div className="font-display text-xl" style={{ color: 'var(--t-gold)' }}>Tile Quest Premium</div>
+            <div className="font-display text-xl" style={{ color: 'var(--t-gold)' }}>Slide Puzzle Premium</div>
           </div>
           <ul className="mt-1.5 space-y-1 text-[13px] font-bold" style={{ color: 'var(--t-sub)' }}>
             <li>· No ads, ever</li>
@@ -232,12 +238,12 @@ export function ProfileScreen() {
         <ChunkyButton color="slate" size="sm" onClick={() => setInfo('privacy')}>Privacy Policy</ChunkyButton>
         <ChunkyButton color="slate" size="sm" onClick={() => setInfo('terms')}>Terms of Service</ChunkyButton>
         <ChunkyButton color="slate" size="sm" icon="star" onClick={() => s.toast('Thanks for the love!', 'heart')}>Rate the App</ChunkyButton>
-        <a href="mailto:support@tilequest.game" className="q-btn q-btn-slate q-btn-sm no-underline">
+        <a href="mailto:support@slidepuzzle.app" className="q-btn q-btn-slate q-btn-sm no-underline">
           <Icon name="info" size={15} /> Support
         </a>
       </div>
       <p className="mt-4 text-center text-[11px] font-bold" style={{ color: 'var(--t-sub)' }}>
-        Tile Quest v1.0.0 · offline-first · cloud sync with Firebase in store builds
+        Slide Puzzle v1.0.0 · offline-first · cloud sync with Firebase in store builds
       </p>
 
       {adOpen && (
@@ -261,7 +267,7 @@ export function ProfileScreen() {
           </h2>
           <p className="mt-2 text-sm font-semibold leading-relaxed" style={{ color: 'var(--t-sub)' }}>
             {info === 'privacy'
-              ? 'Tile Quest stores your progress on your device. In store builds, an anonymous Firebase account syncs progress to the cloud — no name, email or personal data is ever required. Ads are simulated in this preview and no tracking SDKs run.'
+              ? 'Slide Puzzle stores your progress on your device. In store builds, an anonymous Firebase account syncs progress to the cloud — no name, email or personal data is ever required. Ads are simulated in this preview and no tracking SDKs run.'
               : 'Play fairly: timer and daily resets are validated against UTC time and tamper-resistant day keys. Purchases in this preview are simulated. Premium removes ads and unlocks unlimited hints in the full release.'}
           </p>
           <ChunkyButton color="gold" className="mt-4 w-full" onClick={() => setInfo(null)}>Got it</ChunkyButton>

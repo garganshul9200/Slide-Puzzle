@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Tile Quest</string>
-    <string name="title_activity_main">Tile Quest</string>
+    <string name="app_name">Slide Puzzle</string>
+    <string name="title_activity_main">Slide Puzzle</string>
     <string name="package_name">com.tilequest.game</string>
     <string name="custom_url_scheme">com.tilequest.game</string>
 </resources>

@@ -1,5 +1,5 @@
 /**
- * Tile Quest — shared domain types.
+ * Slide Puzzle — shared domain types.
  * Kept separate from the store so engine, config and tests can import
  * them without pulling in React/Zustand.
  */
