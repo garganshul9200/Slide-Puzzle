@@ -1,4 +1,4 @@
-package com.tilequest.game;
+package com.slidepuzzlequest.game;
 
 import com.getcapacitor.BridgeActivity;
 

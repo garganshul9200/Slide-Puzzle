@@ -5,3 +5,6 @@ dist/
 .DS_Store
 .idea/
 *.log
+*.jks
+*.keystore
+android/keystore.properties

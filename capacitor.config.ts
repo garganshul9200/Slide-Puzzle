@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.tilequest.game",
+  appId: "com.slidepuzzlequest.game",
   appName: "Slide Puzzle",
   webDir: "dist",
   android: {

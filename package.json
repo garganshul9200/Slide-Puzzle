@@ -10,7 +10,7 @@
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android",
     "android:run": "npm run android:sync && JAVA_HOME=\"${JAVA_HOME:-/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home}\" npx cap run android",
-    "android:apk": "npm run android:sync && cd android && JAVA_HOME=\"${JAVA_HOME:-/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home}\" ./gradlew assembleDebug"
+    "android:apk": "npm run android:sync && cd android && JAVA_HOME=\"${JAVA_HOME:-/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home}\" ./gradlew bundleRelease"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",

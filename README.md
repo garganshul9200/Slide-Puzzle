@@ -15,7 +15,7 @@ A sliding picture-puzzle game for web and Android. Split the picture into tiles,
 | Ads | `@capacitor-community/admob` (banner, rewarded, interstitial) |
 | Network | `@capacitor/network` (app requires connectivity) |
 
-**App ID:** `com.tilequest.game` · **Display name:** Slide Puzzle
+**App ID:** `com.slidepuzzlequest.game` · **Display name:** Slide Puzzle
 
 ## Features
 
