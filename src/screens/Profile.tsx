@@ -1,10 +1,26 @@
+import { Capacitor } from '@capacitor/core';
 import { useState } from 'react';
 import { audio } from '../audio/audio';
 import { AdOverlay } from '../components/overlays';
-import { ChunkyButton, Icon, Modal, Panel, ProgressBar, Toggle } from '../components/ui';
+import { ChunkyButton, Icon, Panel, ProgressBar, Toggle } from '../components/ui';
 import { AVATARS, COUNTRIES, SHOP, THEMES, xpProgress } from '../game/config';
 import { fmtNum, fmtTime } from '../game/utils';
 import { useStore } from '../state/store';
+
+const PRIVACY_URL = 'https://slide-puzzle-f5dbb.web.app/privacy.html';
+const TERMS_URL = 'https://slide-puzzle-f5dbb.web.app/terms.html';
+const PLAY_STORE_ID = 'com.slidepuzzlequest.game';
+const SUPPORT_MAILTO = 'mailto:anshuwebnetwork%2BslidePuzzle@gmail.com';
+
+function openUrl(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function openPlayStore() {
+  const market = `market://details?id=${PLAY_STORE_ID}`;
+  const web = `https://play.google.com/store/apps/details?id=${PLAY_STORE_ID}`;
+  openUrl(Capacitor.isNativePlatform() ? market : web);
+}
 
 function Avatar({ id, size = 56 }: { id: number; size?: number }) {
   const a = AVATARS[id % AVATARS.length];
@@ -41,15 +57,15 @@ function SectionTitle({ icon, children }: { icon: string; children: React.ReactN
 export function ProfileScreen() {
   const s = useStore();
   const prog = xpProgress(s.xp);
-  const [info, setInfo] = useState<'privacy' | 'terms' | null>(null);
   const [adOpen, setAdOpen] = useState(false);
-  const [buying, setBuying] = useState(false);
   const [usernameDraft, setUsernameDraft] = useState(s.username);
 
   const st = s.stats;
   const avgTime = st.wins ? fmtTime(st.totalTimeMs / st.wins) : '—';
   const avgMoves = st.wins ? (st.totalMoves / st.wins).toFixed(1) : '—';
 
+  /* Hidden for now — re-enable with the Premium store card below.
+  const [buying, setBuying] = useState(false);
   const buyPremium = () => {
     if (s.premium || buying) return;
     setBuying(true);
@@ -59,6 +75,7 @@ export function ProfileScreen() {
       setBuying(false);
     }, 1200);
   };
+  */
 
   return (
     <div className="h-full overflow-y-auto px-4 pb-28 pt-4">
@@ -182,6 +199,7 @@ export function ProfileScreen() {
             Buy
           </ChunkyButton>
         </Panel>
+        {/* Hidden for now
         <Panel className="p-4" >
           <div className="flex items-center gap-2">
             <Icon name="crown" size={22} className="shrink-0" />
@@ -206,6 +224,7 @@ export function ProfileScreen() {
         <ChunkyButton color="slate" size="sm" className="w-full" icon="restart" onClick={() => s.toast('No prior purchases found on this device', 'info')}>
           Restore Purchases
         </ChunkyButton>
+        */}
       </div>
 
       {/* settings */}
@@ -235,15 +254,15 @@ export function ProfileScreen() {
       {/* about */}
       <SectionTitle icon="heart">About</SectionTitle>
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <ChunkyButton color="slate" size="sm" onClick={() => setInfo('privacy')}>Privacy Policy</ChunkyButton>
-        <ChunkyButton color="slate" size="sm" onClick={() => setInfo('terms')}>Terms of Service</ChunkyButton>
-        <ChunkyButton color="slate" size="sm" icon="star" onClick={() => s.toast('Thanks for the love!', 'heart')}>Rate the App</ChunkyButton>
-        <a href="mailto:support@slidepuzzle.app" className="q-btn q-btn-slate q-btn-sm no-underline">
+        <ChunkyButton color="slate" size="sm" onClick={() => openUrl(PRIVACY_URL)}>Privacy Policy</ChunkyButton>
+        <ChunkyButton color="slate" size="sm" onClick={() => openUrl(TERMS_URL)}>Terms of Service</ChunkyButton>
+        <ChunkyButton color="slate" size="sm" icon="star" onClick={openPlayStore}>Rate the App</ChunkyButton>
+        <a href={SUPPORT_MAILTO} className="q-btn q-btn-slate q-btn-sm no-underline">
           <Icon name="info" size={15} /> Support
         </a>
       </div>
       <p className="mt-4 text-center text-[11px] font-bold" style={{ color: 'var(--t-sub)' }}>
-        Slide Puzzle v1.0.0 · offline-first · cloud sync with Firebase in store builds
+        Slide Puzzle v1.0.0 · offline-first · build with 💜
       </p>
 
       {adOpen && (
@@ -260,19 +279,6 @@ export function ProfileScreen() {
         />
       )}
 
-      {info && (
-        <Modal onClose={() => setInfo(null)}>
-          <h2 className="font-display text-2xl" style={{ color: 'var(--t-text)' }}>
-            {info === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
-          </h2>
-          <p className="mt-2 text-sm font-semibold leading-relaxed" style={{ color: 'var(--t-sub)' }}>
-            {info === 'privacy'
-              ? 'Slide Puzzle stores your progress on your device. In store builds, an anonymous Firebase account syncs progress to the cloud — no name, email or personal data is ever required. Ads are simulated in this preview and no tracking SDKs run.'
-              : 'Play fairly: timer and daily resets are validated against UTC time and tamper-resistant day keys. Purchases in this preview are simulated. Premium removes ads and unlocks unlimited hints in the full release.'}
-          </p>
-          <ChunkyButton color="gold" className="mt-4 w-full" onClick={() => setInfo(null)}>Got it</ChunkyButton>
-        </Modal>
-      )}
     </div>
   );
 }

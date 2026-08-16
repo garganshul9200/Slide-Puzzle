@@ -47,6 +47,17 @@ export default function App() {
     return () => clearInterval(iv);
   }, []);
 
+  /* Block the native cut / copy / paste action menu on long-press. */
+  useEffect(() => {
+    const block = (e: Event) => {
+      const t = e.target;
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
+      e.preventDefault();
+    };
+    document.addEventListener('contextmenu', block);
+    return () => document.removeEventListener('contextmenu', block);
+  }, []);
+
   /* Keep the audio engine in sync with player settings. Mute while offline. */
   useEffect(() => {
     audio.configure({
