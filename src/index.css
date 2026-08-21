@@ -18,16 +18,18 @@ html,
 body,
 #root {
   height: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-user-drag: none;
+  background-color: var(--t-bg2, #08202b);
 }
 
 body {
   margin: 0;
   font-family: var(--font-u);
-  background: #08202b;
   color: #f2f7f5;
   overscroll-behavior: none;
   touch-action: manipulation;
@@ -47,6 +49,7 @@ button {
 
 .app-root {
   position: relative;
+  min-height: 100%;
   font-family: var(--font-u);
   color: var(--t-text);
 }

@@ -14,6 +14,7 @@ const config: CapacitorConfig = {
     SystemBars: {
       // Inject --safe-area-inset-* so CSS can clear notch / gesture bars.
       insetsHandling: "css",
+      style: "DARK",
     },
   },
 };

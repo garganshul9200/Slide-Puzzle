@@ -1,3 +1,4 @@
+import { Capacitor, SystemBars, SystemBarsStyle } from '@capacitor/core';
 import { useEffect } from 'react';
 import { audio } from './audio/audio';
 import { AmbientParticles } from './components/fx';
@@ -15,6 +16,12 @@ import { LevelMapScreen } from './screens/LevelMap';
 import { ProfileScreen } from './screens/Profile';
 import { useStore } from './state/store';
 import { cn } from './utils/cn';
+
+declare global {
+  interface Window {
+    SlidePuzzleChrome?: { setColor: (hex: string) => void };
+  }
+}
 
 const NAV: { name: ScreenName; icon: string; label: string }[] = [
   { name: 'home', icon: 'home', label: 'Home' },
@@ -67,6 +74,26 @@ export default function App() {
       sfxVol: settings.sfxVol,
     });
   }, [settings.music, settings.sfx, settings.musicVol, settings.sfxVol, blocked]);
+
+  /* Keep html/body and the native inset chrome on the same color as the theme. */
+  useEffect(() => {
+    const root = document.documentElement;
+    (Object.entries(theme.vars) as [string, string][]).forEach(([k, v]) => {
+      root.style.setProperty(`--t-${k}`, v);
+    });
+    root.style.backgroundColor = theme.vars.bg2;
+    document.body.style.backgroundColor = theme.vars.bg2;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.vars.bg2);
+
+    const lightChrome = theme.id === 'minimal';
+    if (Capacitor.isNativePlatform()) {
+      void SystemBars.setStyle({
+        style: lightChrome ? SystemBarsStyle.Light : SystemBarsStyle.Dark,
+      }).then(() => {
+        window.SlidePuzzleChrome?.setColor(theme.vars.bg2);
+      });
+    }
+  }, [theme]);
 
   const vars: Record<string, string> = {};
   (Object.entries(theme.vars) as [string, string][]).forEach(([k, v]) => {
