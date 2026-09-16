@@ -48,8 +48,16 @@ export function BannerAd({
     <div
       className={cn('relative shrink-0 overflow-hidden', className)}
       style={{ height }}
-      aria-hidden={native || undefined}
+      role="complementary"
+      aria-label="Advertisement"
     >
+      {/* Explicit Ad label so the slot is never mistaken for game UI (Families). */}
+      <span
+        className="pointer-events-none absolute left-2 top-1 z-10 rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest"
+        style={{ background: 'rgba(0,0,0,.55)', color: '#ffb638' }}
+      >
+        Ad
+      </span>
       {!native && (
         <div
           className="flex h-full w-full items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest"
@@ -59,12 +67,6 @@ export function BannerAd({
             borderTop: '1px solid rgba(255,255,255,.08)',
           }}
         >
-          <span
-            className="rounded px-1.5 py-0.5 text-[9px] font-black"
-            style={{ background: 'rgba(255,182,56,.2)', color: '#ffb638' }}
-          >
-            Ad
-          </span>
           Banner · simulated
         </div>
       )}

@@ -278,16 +278,21 @@ export function AdOverlay({
 
   if (native) {
     const label =
-      nativeStatus === 'loading'
-        ? kind === 'rewarded'
-          ? 'Loading rewarded ad…'
-          : 'Loading ad…'
-        : 'Ad unavailable';
+      nativeStatus === 'loading' ? 'Loading advertisement…' : 'Advertisement unavailable';
     return (
       <div className="app-safe fixed inset-0 z-[90] flex flex-col items-center justify-center" style={{ background: '#05060a' }}>
-        <span className="inline-block h-3 w-3 animate-pulse rounded-full" style={{ background: '#ffb638' }} />
+        <span
+          className="rounded px-2 py-0.5 text-[10px] font-black uppercase tracking-widest"
+          style={{ background: 'rgba(255,182,56,.2)', color: '#ffb638' }}
+        >
+          Ad
+        </span>
+        <span className="mt-4 inline-block h-3 w-3 animate-pulse rounded-full" style={{ background: '#ffb638' }} />
         <p className="mt-4 text-sm font-black uppercase tracking-widest" style={{ color: '#8b93a7' }}>
           {label}
+        </p>
+        <p className="mt-2 max-w-xs text-center text-[11px] font-semibold" style={{ color: '#5c6578' }}>
+          This is an advertisement — not part of the puzzle
         </p>
       </div>
     );

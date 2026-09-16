@@ -79,8 +79,10 @@ emulator -avd <name>  # start an AVD from the CLI
 
 Live unit IDs live in `src/ads/config.ts`. The Android App ID in `android/app/src/main/AndroidManifest.xml` must match `ADMOB_APP_ID`.
 
+- AdMob initializes with Families-safe flags: child-directed, under-age-of-consent, max rating General (G), and non-personalized (`npa`) requests.
 - Set `USE_TEST_ADS = true` for emulator / debug to avoid burning production inventory.
 - Premium players skip banner, timed interstitials, and rewarded gates for mix.
+- Interstitials show after every 5 wins, or after 10 minutes of play at the next “Next level” break (never mid-puzzle).
 
 ## Gameplay notes
 

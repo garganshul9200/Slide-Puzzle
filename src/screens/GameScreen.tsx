@@ -162,13 +162,12 @@ export function GameScreen() {
     return () => clearInterval(iv);
   }, [phase, paused, adKind]);
 
-  /* Timed interstitial — every 10 minutes of active puzzle playtime. */
+  /* Timed interstitial — every 10 minutes of play, deferred until Next (never mid-puzzle). */
   useEffect(() => {
     if (premium || phase !== 'play' || paused || adKind || hintShop || showHelp) return;
     const iv = window.setInterval(() => {
       if (tickPlaytime(1000)) {
         timedInterstitialRef.current = true;
-        setAdKind('interstitial');
       }
     }, 1000);
     return () => clearInterval(iv);
@@ -388,7 +387,7 @@ export function GameScreen() {
         nav({ name: 'map' });
         return;
       }
-      if (store.shouldInterstitial()) {
+      if (store.shouldInterstitial() || timedInterstitialRef.current) {
         pendingNextRef.current = true;
         setAdKind('interstitial');
         return;

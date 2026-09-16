@@ -1,12 +1,12 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import {
   AdMob,
   BannerAdPluginEvents,
   BannerAdPosition,
   BannerAdSize,
   InterstitialAdPluginEvents,
+  MaxAdContentRating,
   RewardAdPluginEvents,
-  type PluginListenerHandle,
 } from '@capacitor-community/admob';
 import { AD_UNITS, INTERSTITIAL_EVERY_MS, USE_TEST_ADS } from './config';
 
@@ -19,6 +19,9 @@ let interstitialBusy = false;
 /** Session playtime (ms) while a puzzle is actively being played. */
 let sessionPlayMs = 0;
 
+/** Families / COPPA: non-personalized requests only. */
+const NPA = true;
+
 export function isNativeAds(): boolean {
   return Capacitor.isNativePlatform();
 }
@@ -30,13 +33,20 @@ export function safeBottomPx(): number {
   return Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
 }
 
-/** Call once at app start (native only). Safe to call repeatedly. */
+/**
+ * Call once at app start (native only). Safe to call repeatedly.
+ * Configured for Google Play Families: child-directed, G-rated creatives,
+ * under-age-of-consent tagging.
+ */
 export async function initializeAdMob(): Promise<void> {
   if (!isNativeAds() || initialized) return;
   try {
     await AdMob.initialize({
       testingDevices: [],
       initializeForTesting: USE_TEST_ADS,
+      tagForChildDirectedTreatment: true,
+      tagForUnderAgeOfConsent: true,
+      maxAdContentRating: MaxAdContentRating.General,
     });
     initialized = true;
   } catch (err) {
@@ -67,6 +77,7 @@ export async function showBannerAd(onSize?: BannerSizeHandler): Promise<void> {
       position: BannerAdPosition.BOTTOM_CENTER,
       margin: safeBottomPx(),
       isTesting: USE_TEST_ADS,
+      npa: NPA,
     });
     bannerVisible = true;
     // Adaptive banners report size async; seed a typical banner height.
@@ -103,6 +114,7 @@ export async function prepareRewardedAd(): Promise<void> {
     await AdMob.prepareRewardVideoAd({
       adId: AD_UNITS.rewarded,
       isTesting: USE_TEST_ADS,
+      npa: NPA,
     });
   } catch (err) {
     console.warn('[AdMob] prepareRewardVideoAd failed', err);
@@ -155,6 +167,7 @@ export async function showRewardedAd(): Promise<boolean> {
           await AdMob.prepareRewardVideoAd({
             adId: AD_UNITS.rewarded,
             isTesting: USE_TEST_ADS,
+            npa: NPA,
           });
           // Resolves with reward item on some platforms; still wait for
           // Dismissed so early-close never grants the reward.
@@ -180,6 +193,7 @@ export async function prepareInterstitialAd(): Promise<void> {
     await AdMob.prepareInterstitial({
       adId: AD_UNITS.interstitial,
       isTesting: USE_TEST_ADS,
+      npa: NPA,
     });
   } catch (err) {
     console.warn('[AdMob] prepareInterstitial failed', err);
@@ -228,6 +242,7 @@ export async function showInterstitialAd(): Promise<boolean> {
           await AdMob.prepareInterstitial({
             adId: AD_UNITS.interstitial,
             isTesting: USE_TEST_ADS,
+            npa: NPA,
           });
           await AdMob.showInterstitial();
         } catch (err) {
@@ -243,8 +258,9 @@ export async function showInterstitialAd(): Promise<boolean> {
 }
 
 /**
- * Accumulate active playtime. Returns true when the 10-minute threshold is
- * reached (and resets the counter).
+ * Accumulate active playtime. Returns true when the Families-safe interstitial
+ * interval is reached (and resets the counter). Callers should only show the
+ * ad at a natural break — never mid-move over puzzle controls.
  */
 export function tickPlaytime(ms: number): boolean {
   sessionPlayMs += ms;

@@ -183,9 +183,9 @@ export function ProfileScreen() {
           </span>
           <div className="flex-1">
             <div className="text-sm font-extrabold" style={{ color: 'var(--t-text)' }}>+{SHOP.rewardedCoins} Coins</div>
-            <div className="text-[11px] font-bold" style={{ color: 'var(--t-sub)' }}>Watch a short ad</div>
+            <div className="text-[11px] font-bold" style={{ color: 'var(--t-sub)' }}>Watch a short advertisement</div>
           </div>
-          <ChunkyButton size="sm" color="violet" icon="play" onClick={() => setAdOpen(true)}>Free</ChunkyButton>
+          <ChunkyButton size="sm" color="violet" icon="play" onClick={() => setAdOpen(true)}>Watch Ad</ChunkyButton>
         </Panel>
         <Panel className="flex items-center gap-3 p-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: 'var(--t-panel2)', color: 'var(--t-accent)' }}>

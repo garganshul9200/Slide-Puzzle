@@ -8,10 +8,10 @@ export const USE_TEST_ADS = false;
 export const ADMOB_APP_ID = 'ca-app-pub-2848005220802634~3283286768';
 
 export const AD_UNITS = {
-  banner: 'ca-app-pub-2848005220802634/7951541543',
-  interstitial: 'ca-app-pub-2848005220802634/2627062673',
-  rewarded: 'ca-app-pub-2848005220802634/6183164308',
+  banner: 'ca-app-pub-2848005220802634/5306611618',
+  interstitial: 'ca-app-pub-2848005220802634/4796259541',
+  rewarded: 'ca-app-pub-2848005220802634/7589943842',
 } as const;
 
-/** Show an interstitial after this much active puzzle playtime. */
-export const INTERSTITIAL_EVERY_MS = 3 * 60_000;
+/** Show an interstitial after this much active puzzle playtime (deferred to a natural break). */
+export const INTERSTITIAL_EVERY_MS = 4 * 60_000;
