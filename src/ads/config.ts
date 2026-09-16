@@ -5,7 +5,7 @@
 export const USE_TEST_ADS = false;
 
 /** Live AdMob App ID — must match AndroidManifest APPLICATION_ID. */
-export const ADMOB_APP_ID = 'ca-app-pub-2848005220802634~3283286768';
+export const ADMOB_APP_ID = 'ca-app-pub-2848005220802634~9745228690';
 
 export const AD_UNITS = {
   banner: 'ca-app-pub-2848005220802634/5306611618',
